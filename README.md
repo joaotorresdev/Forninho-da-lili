@@ -14,6 +14,7 @@ A Lili cuida de produtos, pedidos e clientes sozinha, sem mexer em código.
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ![Status](https://img.shields.io/badge/status-demonstração-D87093?style=flat-square)
 ![Projeto acadêmico](https://img.shields.io/badge/SENAI-Análise%20e%20Desenvolvimento%20de%20Sistemas-4A3B32?style=flat-square)
@@ -195,8 +196,8 @@ Projeto desenvolvido no curso de **Análise e Desenvolvimento de Sistemas — SE
 |---|---|
 | Matheus Augusto Ribeiro | [@matheusaribeirodev](https://github.com/matheusaribeirodev) |
 | João Torres | [@joaotorresdev](https://github.com/joaotorresdev) |
-| [Nome 3] | [@usuario] |
-| [Nome 4] | [@usuario] |
+| Luis Neto | [@luisneto016](https://github.com/luisneto016) |
+| Gustavo Pereira | [@Pereira06z](https://github.com/pereira06z) |
 
 ---
 
