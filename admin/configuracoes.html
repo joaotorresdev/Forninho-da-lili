@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- O painel nunca deve aparecer no Google -->
+<meta name="robots" content="noindex, nofollow">
+<title>Configurações | Painel Forninho da Lili</title>
+<link rel="icon" href="../assets/img/logo-selo.jpg">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
+<!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
+</head>
+<body class="admin-corpo">
+
+<!-- =================== TOPO DO PAINEL (igual em todas as páginas) =================== -->
+<header class="admin-topo">
+  <a class="logo" href="painel.html" aria-label="Painel do Forninho da Lili, visão geral">
+    <img class="logo-selo" src="../assets/img/logo-selo.jpg" alt="" width="44" height="44">
+    <span class="logo-forninho">Forninho</span>
+    <span class="logo-da">da</span>
+    <span class="logo-lili">Lili</span>
+    <span class="logo-papel">Painel</span>
+  </a>
+  <div class="admin-usuario">
+    <span>Olá, <strong data-nome-usuario>Lili</strong></span>
+    <a href="../index.html" target="_blank" rel="noopener">Ver o site</a>
+    <button class="botao botao-mini botao-sair" type="button" data-sair>Sair</button>
+  </div>
+</header>
+
+<div class="admin-app">
+  <div class="painel">
+    <nav class="painel-menu" aria-label="Menu do painel">
+      <a href="painel.html">Visão geral</a>
+      <a href="pedidos.html">Pedidos</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="producao.html">Produção</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="banner.html">Página inicial</a>
+      <a href="clientes.html">Clientes</a>
+      <a class="ativo" href="configuracoes.html" aria-current="page">Configurações</a>
+    </nav>
+
+    <main class="painel-corpo">
+      <div class="painel-topo">
+        <div>
+          <h1>Configurações</h1>
+          <p class="subtitulo">Dados usados no site e na mensagem do pedido. Informação não preenchida não aparece no site.</p>
+        </div>
+      </div>
+
+      <p data-aviso hidden></p>
+
+      <!-- Na versão PHP: <form method="post" action="configuracao_salvar.php"> (UPDATE configuracao WHERE id = 1) -->
+      <form class="form-admin" id="form" novalidate>
+        <fieldset>
+          <legend>Atendimento</legend>
+          <div class="campos-lado">
+            <div class="campo">
+              <label for="whatsapp">WhatsApp com DDD <span class="obrigatorio">*</span></label>
+              <input type="tel" id="whatsapp" name="whatsapp" inputmode="tel" required placeholder="(11) 90000-0000">
+              <span class="dica">Os pedidos do site são enviados para este número.</span>
+            </div>
+            <div class="campo">
+              <label for="instagram">Instagram</label>
+              <input type="text" id="instagram" name="instagram" maxlength="40" placeholder="@perfil">
+            </div>
+          </div>
+          <div class="campo">
+            <label for="horario">Horário de atendimento</label>
+            <input type="text" id="horario" name="horario" maxlength="80" placeholder="Ex.: segunda a sábado, das 9h às 18h">
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Pagamento via PIX</legend>
+          <div class="campo">
+            <label for="pix_chave">Chave PIX</label>
+            <input type="text" id="pix_chave" name="pix_chave" maxlength="77" autocomplete="off">
+            <span class="dica">Vai na mensagem do pedido e na tela de pagamento. Para chave de celular, use o formato +5511900000000.</span>
+          </div>
+          <div class="campo">
+            <span class="rotulo">QR code PIX</span>
+            <input type="hidden" name="pix_qrcode">
+            <div class="foto-campo-banner">
+              <div class="previa-imagem previa-qr" id="previa-qr"></div>
+              <div class="campo">
+                <label for="arquivo-qr">Enviar imagem do QR code</label>
+                <input type="file" id="arquivo-qr" accept="image/*">
+                <span class="dica">Gere o QR code no app do banco e envie a imagem aqui. Ele aparece junto da chave no fim do pedido, com botão para baixar.</span>
+                <button class="botao botao-claro botao-mini" type="button" id="remover-qr" hidden>Remover QR code</button>
+              </div>
+            </div>
+          </div>
+          <div class="campos-lado">
+            <div class="campo">
+              <label for="pix_nome">Nome de quem recebe</label>
+              <input type="text" id="pix_nome" name="pix_nome" maxlength="25">
+            </div>
+            <div class="campo">
+              <label for="pix_cidade">Cidade de quem recebe</label>
+              <input type="text" id="pix_cidade" name="pix_cidade" maxlength="15">
+              <span class="dica">Necessária para gerar o PIX copia e cola já com o valor.</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Entrega e retirada</legend>
+          <div class="campos-lado">
+            <div class="campo">
+              <label for="taxa_entrega">Taxa de entrega (R$)</label>
+              <input type="number" id="taxa_entrega" name="taxa_entrega" min="0" step="0.01" inputmode="decimal">
+              <span class="dica">Somada ao total do pedido. Vazio = combinada pelo WhatsApp.</span>
+            </div>
+            <div class="campo campo-check">
+              <label class="opcao"><input type="checkbox" name="aceita_retirada"> Aceitar retirada</label>
+              <span class="dica">Desligado: o site só oferece entrega.</span>
+            </div>
+          </div>
+          <div class="campo" id="campo-retirada">
+            <label for="endereco_retirada">Endereço de retirada</label>
+            <input type="text" id="endereco_retirada" name="endereco_retirada" maxlength="160">
+            <span class="dica">Vazio = a Lili envia o endereço pelo WhatsApp.</span>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Agenda</legend>
+          <div class="campos-lado">
+            <div class="campo">
+              <label for="antecedencia_dias">Antecedência mínima (dias)</label>
+              <input type="number" id="antecedencia_dias" name="antecedencia_dias" min="0" step="1">
+              <span class="dica">Datas mais próximas não podem ser escolhidas no site.</span>
+            </div>
+            <div class="campo">
+              <label for="limite_pedidos_dia">Limite de pedidos por dia</label>
+              <input type="number" id="limite_pedidos_dia" name="limite_pedidos_dia" min="1" step="1">
+              <span class="dica">Ao atingir o limite, a data fica indisponível no site. Vazio = sem limite.</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Políticas</legend>
+          <div class="campo">
+            <label for="politica_cancelamento">Política de cancelamento</label>
+            <textarea id="politica_cancelamento" name="politica_cancelamento" rows="3" maxlength="300"></textarea>
+          </div>
+        </fieldset>
+
+        <div class="form-acoes">
+          <button class="botao" type="submit">Salvar configurações</button>
+        </div>
+      </form>
+
+      <!-- Tabela folga: INSERT / DELETE -->
+      <section class="form-admin" aria-labelledby="t-folgas">
+        <h2 id="t-folgas" class="titulo-secao">Dias de folga</h2>
+        <form class="ferramentas" id="form-folga" novalidate style="margin-top:0">
+          <label>Data
+            <input type="date" id="nova-folga" required>
+          </label>
+          <button class="botao botao-claro" type="submit">Adicionar folga</button>
+        </form>
+        <ul class="lista-folgas" id="lista-folgas"></ul>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+  var db = LojaDB, esc = db.esc;
+  var form = document.getElementById('form');
+  var CAMPOS = ['whatsapp', 'instagram', 'horario', 'pix_chave', 'pix_qrcode', 'pix_nome', 'pix_cidade', 'taxa_entrega', 'endereco_retirada', 'antecedencia_dias', 'limite_pedidos_dia', 'politica_cancelamento'];
+  var NUMEROS = ['taxa_entrega', 'antecedencia_dias', 'limite_pedidos_dia'];
+
+  Admin.mostrarAviso({ salvo: 'Configurações salvas. O site já mostra as informações novas.' });
+
+  function avisar(texto, erro) {
+    var aviso = document.querySelector('[data-aviso]');
+    aviso.className = 'aviso' + (erro ? ' aviso-erro' : '');
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    aviso.scrollIntoView({ block: 'center' });
+  }
+
+  var c = db.config();
+  form.aceita_retirada.checked = Number(c.aceita_retirada) === 1;
+  function mostrarRetirada() { document.getElementById('campo-retirada').hidden = !form.aceita_retirada.checked; }
+  form.aceita_retirada.addEventListener('change', mostrarRetirada);
+  mostrarRetirada();
+  CAMPOS.forEach(function (k) {
+    var v = c[k];
+    form[k].value = k === 'whatsapp' ? db.telefoneBr(v) : (v === null || v === undefined ? '' : v);
+  });
+
+  // ----- QR code PIX: guarda a imagem como está, só reduz se passar de 800 px (PNG mantém o QR nítido) -----
+  function mostrarQr() {
+    var v = form.pix_qrcode.value;
+    document.getElementById('previa-qr').innerHTML = v ? '<img src="' + esc(db.urlImagem(v, '../')) + '" alt="QR code PIX atual">' : '<span>Sem QR code</span>';
+    document.getElementById('remover-qr').hidden = !v;
+  }
+  document.getElementById('arquivo-qr').addEventListener('change', function () {
+    var arquivo = this.files && this.files[0];
+    if (!arquivo) return;
+    if (!/^image\//.test(arquivo.type)) { avisar('Escolha um arquivo de imagem.', true); return; }
+    var leitor = new FileReader();
+    leitor.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var fator = Math.min(1, 800 / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * fator); canvas.height = Math.round(img.height * fator);
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = fator < 1;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        form.pix_qrcode.value = canvas.toDataURL('image/png');
+        mostrarQr();
+        avisar('QR code carregado. Clique em “Salvar configurações” para aplicar no site.');
+      };
+      img.src = leitor.result;
+    };
+    leitor.readAsDataURL(arquivo);
+  });
+  document.getElementById('remover-qr').addEventListener('click', function () {
+    form.pix_qrcode.value = '';
+    document.getElementById('arquivo-qr').value = '';
+    mostrarQr();
+    document.getElementById('arquivo-qr').focus();
+  });
+  mostrarQr();
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var fone = form.whatsapp.value.replace(/\D/g, '');
+    if (fone.length < 10 || fone.length > 13) {
+      form.whatsapp.setAttribute('aria-invalid', 'true');
+      form.whatsapp.focus();
+      avisar('Confira o WhatsApp: use DDD e número, por exemplo (11) 90000-0000.', true);
+      return;
+    }
+    form.whatsapp.setAttribute('aria-invalid', 'false');
+    var dados = {};
+    CAMPOS.forEach(function (k) {
+      var v = form[k].value.trim();
+      dados[k] = NUMEROS.indexOf(k) !== -1 ? db.numeroOuNulo(v) : v;
+    });
+    dados.whatsapp = fone.length <= 11 ? '55' + fone : fone;
+    dados.aceita_retirada = form.aceita_retirada.checked ? 1 : 0;
+    dados.instagram = dados.instagram.replace(/^@/, '');
+    try { db.salvarConfig(dados); } catch (erro) {
+      avisar('Não foi possível salvar: a imagem do QR code é grande demais para a demonstração no navegador. Tente uma imagem menor.', true);
+      return;
+    }
+    window.location.href = 'configuracoes.html?msg=salvo';
+  });
+
+  // ----- Folgas -----
+  var campoFolga = document.getElementById('nova-folga');
+  campoFolga.min = db.hojeISO();
+
+  function desenharFolgas() {
+    var folgas = db.listar('folga').sort(function (a, b) { return a.data.localeCompare(b.data); });
+    document.getElementById('lista-folgas').innerHTML = folgas.length ? folgas.map(function (f) {
+      return '<li><span>' + db.dataLonga(f.data) + (f.data < db.hojeISO() ? ' <span class="td-sub-inline">(já passou)</span>' : '') + '</span>' +
+        '<button class="botao botao-claro botao-mini" type="button" data-remover="' + f.id + '">Remover<span class="visualmente-oculto"> folga de ' + db.dataBr(f.data) + '</span></button></li>';
+    }).join('') : '<li class="dica">Nenhuma folga marcada.</li>';
+  }
+
+  document.getElementById('form-folga').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var d = campoFolga.value;
+    if (!d) { campoFolga.focus(); return; }
+    if (!db.ehFolga(d)) db.salvar('folga', { data: d });
+    var marcados = db.pedidosNoDia(d);
+    campoFolga.value = '';
+    desenharFolgas();
+    avisar('Folga marcada para ' + db.dataLonga(d) + '.' + (marcados ? ' Atenção: já existe(m) ' + marcados + ' pedido(s) nesse dia.' : ''), marcados > 0);
+  });
+
+  document.getElementById('lista-folgas').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-remover]');
+    if (!b) return;
+    db.excluir('folga', b.dataset.remover);
+    desenharFolgas();
+    avisar('Folga removida.');
+    campoFolga.focus();
+  });
+
+  desenharFolgas();
+</script>
+</body>
+</html>

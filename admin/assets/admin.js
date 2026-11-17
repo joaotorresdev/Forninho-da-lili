@@ -106,6 +106,15 @@
     document.querySelectorAll('[data-nome-usuario]').forEach(function (el) {
       if (sessao) el.textContent = sessao.nome;
     });
+    // Número de pedidos "Novo" ao lado de "Pedidos" no menu (chegam pelo site)
+    var novos = LojaDB.listar('pedido').filter(function (p) { return p.status === 'Novo'; }).length;
+    var link = document.querySelector('.painel-menu a[href="pedidos.html"]');
+    if (link && novos) link.insertAdjacentHTML('beforeend', ' <span class="badge" aria-label="' + novos + ' novos">' + novos + '</span>');
+  }
+
+  /* Classe da etiqueta de situação: "Em preparo" -> status status-em-preparo */
+  function classeStatus(s) {
+    return 'status status-' + String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciarPagina);
@@ -117,6 +126,7 @@
     logado: function () { return !!lerSessao(); },
     param: param,
     mostrarAviso: mostrarAviso,
-    confirmar: confirmar
+    confirmar: confirmar,
+    classeStatus: classeStatus
   };
 })();

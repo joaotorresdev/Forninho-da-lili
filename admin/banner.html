@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- O painel nunca deve aparecer no Google -->
+<meta name="robots" content="noindex, nofollow">
+<title>Página inicial | Painel Forninho da Lili</title>
+<link rel="icon" href="../assets/img/logo-selo.jpg">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
+<!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
+</head>
+<body class="admin-corpo">
+
+<!-- =================== TOPO DO PAINEL (igual em todas as páginas) =================== -->
+<header class="admin-topo">
+  <a class="logo" href="painel.html" aria-label="Painel do Forninho da Lili, visão geral">
+    <img class="logo-selo" src="../assets/img/logo-selo.jpg" alt="" width="44" height="44">
+    <span class="logo-forninho">Forninho</span>
+    <span class="logo-da">da</span>
+    <span class="logo-lili">Lili</span>
+    <span class="logo-papel">Painel</span>
+  </a>
+  <div class="admin-usuario">
+    <span>Olá, <strong data-nome-usuario>Lili</strong></span>
+    <a href="../index.html" target="_blank" rel="noopener">Ver o site</a>
+    <button class="botao botao-mini botao-sair" type="button" data-sair>Sair</button>
+  </div>
+</header>
+
+<div class="admin-app">
+  <div class="painel">
+    <nav class="painel-menu" aria-label="Menu do painel">
+      <a href="painel.html">Visão geral</a>
+      <a href="pedidos.html">Pedidos</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="producao.html">Produção</a>
+      <a href="produtos.html">Produtos</a>
+      <a class="ativo" href="banner.html" aria-current="page">Página inicial</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
+    </nav>
+
+    <main class="painel-corpo">
+      <div class="painel-topo">
+        <div>
+          <h1>Página inicial</h1>
+          <p class="subtitulo">Banner do topo do site: imagem, título, texto e as 3 informações logo abaixo.</p>
+        </div>
+        <a class="botao botao-claro" href="../index.html" target="_blank" rel="noopener">Ver no site</a>
+      </div>
+
+      <p data-aviso hidden></p>
+
+      <div class="banner-edicao">
+        <!-- Na versão PHP: <form method="post" action="banner_salvar.php" enctype="multipart/form-data"> (UPDATE banner WHERE id = 1) -->
+        <form class="form-admin" id="form" novalidate>
+          <fieldset>
+            <legend>Imagem do banner</legend>
+            <input type="hidden" name="imagem">
+            <div class="foto-campo-banner">
+              <div class="previa-imagem" id="previa-imagem"></div>
+              <div class="campo">
+                <label for="arquivo">Enviar imagem</label>
+                <input type="file" id="arquivo" accept="image/*">
+                <span class="dica">Use uma foto real dos doces. A imagem aparece inteira, sem cortes, reduzida para até 1200 px.</span>
+                <label for="caminho" style="margin-top:.5rem">…ou caminho / link da imagem</label>
+                <input type="text" id="caminho" placeholder="assets/img/bandeja-doces.jpg">
+              </div>
+            </div>
+            <div class="campo">
+              <label for="imagem_alt">Descrição da imagem (para leitores de tela) <span class="obrigatorio">*</span></label>
+              <input type="text" id="imagem_alt" name="imagem_alt" maxlength="200" required>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Texto</legend>
+            <div class="campo">
+              <label for="titulo">Título <span class="obrigatorio">*</span></label>
+              <input type="text" id="titulo" name="titulo" maxlength="60" required>
+            </div>
+            <div class="campo">
+              <label for="texto">Texto de apresentação</label>
+              <textarea id="texto" name="texto" rows="3" maxlength="220"></textarea>
+              <span class="dica" id="conta-texto"></span>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Informações abaixo do banner</legend>
+            <p class="dica">Deixe título e texto vazios para esconder uma informação.</p>
+          <div class="campos-lado">
+            <div class="campo">
+              <label for="destaque1_titulo">Informação 1: título</label>
+              <input type="text" id="destaque1_titulo" name="destaque1_titulo" maxlength="40">
+            </div>
+            <div class="campo">
+              <label for="destaque1_texto">Informação 1: texto</label>
+              <input type="text" id="destaque1_texto" name="destaque1_texto" maxlength="70">
+            </div>
+          </div>
+          <div class="campos-lado">
+            <div class="campo">
+              <label for="destaque2_titulo">Informação 2: título</label>
+              <input type="text" id="destaque2_titulo" name="destaque2_titulo" maxlength="40">
+            </div>
+            <div class="campo">
+              <label for="destaque2_texto">Informação 2: texto</label>
+              <input type="text" id="destaque2_texto" name="destaque2_texto" maxlength="70">
+            </div>
+          </div>
+          <div class="campos-lado">
+            <div class="campo">
+              <label for="destaque3_titulo">Informação 3: título</label>
+              <input type="text" id="destaque3_titulo" name="destaque3_titulo" maxlength="40">
+            </div>
+            <div class="campo">
+              <label for="destaque3_texto">Informação 3: texto</label>
+              <input type="text" id="destaque3_texto" name="destaque3_texto" maxlength="70">
+            </div>
+          </div>
+          </fieldset>
+
+          <div class="form-acoes">
+            <button class="botao" type="submit">Salvar página inicial</button>
+            <button class="botao botao-claro" type="button" id="padrao">Voltar ao texto original</button>
+          </div>
+        </form>
+
+        <!-- Prévia ao vivo: mostra como o banner vai ficar antes de salvar -->
+        <section class="previa-banner" aria-labelledby="t-previa">
+          <h2 id="t-previa" class="titulo-secao">Prévia</h2>
+          <div class="previa-hero">
+            <div class="previa-hero-texto">
+              <p class="previa-titulo" id="pv-titulo"></p>
+              <p id="pv-texto"></p>
+              <span class="previa-botao">Ver o cardápio</span>
+            </div>
+            <img id="pv-imagem" alt="">
+          </div>
+          <ul class="previa-destaques" id="pv-destaques"></ul>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  var db = LojaDB;
+  var form = document.getElementById('form');
+  var CAMPOS = ['imagem', 'imagem_alt', 'titulo', 'texto', 'destaque1_titulo', 'destaque1_texto', 'destaque2_titulo', 'destaque2_texto', 'destaque3_titulo', 'destaque3_texto'];
+
+  Admin.mostrarAviso({ salvo: 'Página inicial salva. O banner do site já foi atualizado.' });
+
+  function avisar(texto, erro) {
+    var aviso = document.querySelector('[data-aviso]');
+    aviso.className = 'aviso' + (erro ? ' aviso-erro' : '');
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    aviso.scrollIntoView({ block: 'center' });
+  }
+
+  function preencher(b) {
+    CAMPOS.forEach(function (k) { form[k].value = b[k] || ''; });
+    document.getElementById('caminho').value = /^data:/.test(b.imagem) ? '' : (b.imagem || '');
+    atualizarPrevia();
+  }
+
+  function atualizarPrevia() {
+    var src = db.urlImagem(form.imagem.value, '../');
+    document.getElementById('previa-imagem').innerHTML = src ? '<img src="' + db.esc(src) + '" alt="">' : '<span>Sem imagem</span>';
+    var pv = document.getElementById('pv-imagem');
+    pv.src = src; pv.hidden = !src;
+    document.getElementById('pv-titulo').textContent = form.titulo.value || 'Título do banner';
+    document.getElementById('pv-texto').textContent = form.texto.value;
+    document.getElementById('conta-texto').textContent = form.texto.value.length + ' de 220 caracteres';
+    document.getElementById('pv-destaques').innerHTML = [1, 2, 3].map(function (i) {
+      var t = form['destaque' + i + '_titulo'].value, x = form['destaque' + i + '_texto'].value;
+      return (t || x) ? '<li><strong>' + db.esc(t) + '</strong><span>' + db.esc(x) + '</span></li>' : '';
+    }).join('');
+  }
+
+  form.addEventListener('input', atualizarPrevia);
+
+  document.getElementById('caminho').addEventListener('change', function () {
+    form.imagem.value = this.value.trim();
+    atualizarPrevia();
+  });
+
+  // Reduz a imagem para até 1200 px no lado maior, sem cortar (fidelidade do produto)
+  document.getElementById('arquivo').addEventListener('change', function () {
+    var arquivo = this.files && this.files[0];
+    if (!arquivo) return;
+    if (!/^image\//.test(arquivo.type)) { avisar('Escolha um arquivo de imagem.', true); return; }
+    var leitor = new FileReader();
+    leitor.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var fator = Math.min(1, 1200 / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * fator);
+        canvas.height = Math.round(img.height * fator);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        form.imagem.value = canvas.toDataURL('image/jpeg', 0.82);
+        document.getElementById('caminho').value = '';
+        atualizarPrevia();
+        // Imagem nova pede descrição nova
+        form.imagem_alt.value = '';
+        form.imagem_alt.focus();
+        avisar('Imagem carregada. Descreva a nova imagem e clique em “Salvar página inicial”.');
+      };
+      img.src = leitor.result;
+    };
+    leitor.readAsDataURL(arquivo);
+  });
+
+  document.getElementById('padrao').addEventListener('click', function () {
+    preencher(db.bannerPadrao());
+    avisar('Texto e imagem originais carregados. Clique em “Salvar página inicial” para aplicar no site.');
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var faltando = [];
+    if (!form.imagem.value) faltando.push('a imagem');
+    if (!form.imagem_alt.value.trim()) faltando.push('a descrição da imagem');
+    if (!form.titulo.value.trim()) faltando.push('o título');
+    if (faltando.length) { avisar('Preencha ' + db.listaPt(faltando) + '.', true); return; }
+    var dados = {};
+    CAMPOS.forEach(function (k) { dados[k] = form[k].value.trim(); });
+    try { db.salvarBanner(dados); } catch (erro) {
+      avisar('Não foi possível salvar: a imagem é grande demais para a demonstração no navegador. Tente uma imagem menor ou use um caminho.', true);
+      return;
+    }
+    window.location.href = 'banner.html?msg=salvo';
+  });
+
+  preencher(db.banner());
+</script>
+</body>
+</html>

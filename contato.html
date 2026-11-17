@@ -8,13 +8,12 @@
 <link rel="icon" href="assets/img/logo-selo.jpg">
 <link rel="preload" href="assets/fontes/fraunces-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fontes/figtree-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/estilo.css">
+<link rel="stylesheet" href="assets/css/estilo.css?v=20261117a">
 </head>
 <body id="inicio">
 
 <div class="progresso" aria-hidden="true"></div>
 
-<p class="faixa-demo">Versão de demonstração: preços são fictícios.</p>
 
 <!-- =================== CABEÇALHO (igual em todas as páginas) =================== -->
 <header class="topo">
@@ -32,7 +31,7 @@
         <li><a href="contato.html" aria-current="page">Contato</a></li>
       </ul>
     </nav>
-    <a class="botao botao-claro botao-mini" href="https://wa.me/5511989634843?text=Ol%C3%A1%21%20Vim%20pelo%20site%20do%20Forninho%20da%20Lili." target="_blank" rel="noopener">Encomendar</a>
+    <button type="button" class="botao botao-mini botao-pedido" data-abrir-pedido aria-haspopup="dialog">Pedido <span class="contador" hidden>0</span></button>
   </div>
 </header>
 
@@ -44,19 +43,19 @@
       <div>
         <h1 class="titulo-pagina" id="titulo-contato">Contato</h1>
         <dl class="dados-contato">
-          <div><dt>WhatsApp de atendimento</dt><dd><a href="https://wa.me/5511989634843?text=Ol%C3%A1%21%20Vim%20pelo%20site%20do%20Forninho%20da%20Lili." target="_blank" rel="noopener">(11) 98963-4843</a></dd></div>
-          <div><dt>Horários de atendimento</dt><dd><span class="a-confirmar">a confirmar</span></dd></div>
-          <div><dt>Redes sociais</dt><dd>Instagram: <span class="a-confirmar">perfil a confirmar</span></dd></div>
+          <div><dt>WhatsApp de atendimento</dt><dd data-config="whatsapp"><a href="https://wa.me/5511989634843?text=Ol%C3%A1%21%20Vim%20pelo%20site%20do%20Forninho%20da%20Lili." target="_blank" rel="noopener">(11) 98963-4843</a></dd></div>
+          <div hidden><dt>Horários de atendimento</dt><dd data-config="horario"></dd></div>
+          <div hidden><dt>Redes sociais</dt><dd>Instagram: <span data-config="instagram"></span></dd></div>
         </dl>
         <a class="botao botao-principal" href="https://wa.me/5511989634843?text=Ol%C3%A1%21%20Vim%20pelo%20site%20do%20Forninho%20da%20Lili." target="_blank" rel="noopener">Chamar no WhatsApp</a>
       </div>
-      <form class="formulario" action="contato.html" aria-labelledby="titulo-mensagem">
+      <form class="formulario" id="form-contato" action="contato.html" aria-labelledby="titulo-mensagem" novalidate>
         <h3 id="titulo-mensagem">Envie uma mensagem</h3>
         <label>Nome <input type="text" name="nome" autocomplete="name"></label>
-        <label>Telefone <input type="tel" name="telefone" autocomplete="tel"></label>
-        <label>Mensagem <textarea name="mensagem"></textarea></label>
-        <button class="botao" type="button" aria-disabled="true">Enviar mensagem</button>
-        <p class="nota">Campo demonstrativo: nesta versão, nenhuma mensagem é enviada.</p>
+        <label>Mensagem <textarea name="mensagem" aria-describedby="erro-mensagem"></textarea></label>
+        <p class="erro" id="erro-mensagem" hidden></p>
+        <button class="botao" type="submit">Enviar pelo WhatsApp</button>
+        <p class="nota">O WhatsApp abre com a sua mensagem pronta para a Lili.</p>
       </form>
     </div>
   </section>
@@ -80,6 +79,7 @@
         <li><a href="cardapio.html">Cardápio</a></li>
         <li><a href="sobre.html">Sobre Nós</a></li>
         <li><a href="index.html#encomendas">Como encomendar</a></li>
+        <li><a href="index.html#duvidas">Dúvidas frequentes</a></li>
         <li><a href="contato.html">Contato</a></li>
       </ul>
     </div>
@@ -94,9 +94,11 @@
   <div class="conteudo rodape-legal">
     <p>© <span data-ano>2026</span> Forninho da Lili. Todos os direitos reservados.</p>
     <p>Se você tem alergia ou restrição alimentar, confirme os ingredientes no momento da encomenda.</p>
-    <p>Esboço visual para aprovação. Preços são fictícios. Produtos sem foto real aparecem com um espaço reservado.</p>
   </div>
 </footer>
+<!-- dados.js = "banco" provisório; loja.js = carrinho e pedido pelo WhatsApp -->
+<script src="assets/js/dados.js?v=20261117a"></script>
+<script src="assets/js/loja.js?v=20261117a"></script>
 
 </body>
 </html>

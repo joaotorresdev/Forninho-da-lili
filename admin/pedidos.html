@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos | Painel Forninho da Lili</title>
 <link rel="icon" href="../assets/img/logo-selo.jpg">
-<link rel="stylesheet" href="../assets/css/estilo.css">
-<link rel="stylesheet" href="assets/admin.css">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
 <!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
-<script src="../assets/js/dados.js"></script>
-<script src="assets/admin.js"></script>
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
 </head>
 <body class="admin-corpo">
 
@@ -36,15 +36,19 @@
     <nav class="painel-menu" aria-label="Menu do painel">
       <a href="painel.html">Visão geral</a>
       <a class="ativo" href="pedidos.html" aria-current="page">Pedidos</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="producao.html">Produção</a>
       <a href="produtos.html">Produtos</a>
+      <a href="banner.html">Página inicial</a>
       <a href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
     </nav>
 
     <main class="painel-corpo">
       <div class="painel-topo">
         <div>
           <h1>Pedidos</h1>
-          <p class="subtitulo">Encomendas combinadas pelo WhatsApp.</p>
+          <p class="subtitulo">Encomendas do site e do WhatsApp, da confirmação até a entrega.</p>
         </div>
         <a class="botao" href="pedido-form.html">+ Novo pedido</a>
       </div>
@@ -58,12 +62,18 @@
         <label>Situação
           <select id="filtro-status"><option value="">Todas</option><option value="abertos">Em aberto</option></select>
         </label>
+        <label>Pagamento
+          <select id="filtro-pago"><option value="">Todos</option><option value="0">A receber</option><option value="1">Pagos</option></select>
+        </label>
+        <label>Origem
+          <select id="filtro-origem"><option value="">Todas</option><option value="Site">Site</option><option value="Painel">Painel</option></select>
+        </label>
       </form>
 
       <div class="bloco" style="margin-top:1rem">
-        <table class="tabela">
+        <table class="tabela tabela-pedidos">
           <thead>
-            <tr><th scope="col">Pedido</th><th scope="col">Data</th><th scope="col">Itens</th><th scope="col">Total</th><th scope="col">Situação</th><th scope="col">Ações</th></tr>
+            <tr><th scope="col">Pedido</th><th scope="col">Entrega</th><th scope="col">Itens</th><th scope="col">Total</th><th scope="col">Pagamento</th><th scope="col">Situação</th><th scope="col">Ações</th></tr>
           </thead>
           <tbody id="lista"></tbody>
         </table>
@@ -86,61 +96,103 @@
 
   var selStatus = document.getElementById('filtro-status');
   db.STATUS_PEDIDO.forEach(function (s) { selStatus.add(new Option(s, s)); });
+  if (Admin.param('status')) selStatus.value = Admin.param('status');
+  var FINAIS = ['Entregue', 'Cancelado'];
+
+  function avisar(texto) {
+    var aviso = document.querySelector('[data-aviso]');
+    aviso.className = 'aviso';
+    aviso.textContent = texto;
+    aviso.hidden = false;
+  }
+
+  /* Pedidos em aberto primeiro, pela data de entrega mais próxima. Depois os finalizados, do mais recente. */
+  function ordem(a, b) {
+    var fa = FINAIS.indexOf(a.status) !== -1, fb = FINAIS.indexOf(b.status) !== -1;
+    if (fa !== fb) return fa ? 1 : -1;
+    var porData = a.data_entrega.localeCompare(b.data_entrega) || (a.horario || '').localeCompare(b.horario || '');
+    return fa ? -porData || b.id - a.id : porData || a.id - b.id;
+  }
 
   function desenhar() {
     var clientes = db.listar('cliente');
     var produtos = db.listar('produto');
     var itens = db.listar('pedido_item');
     var busca = document.getElementById('busca').value.trim().toLowerCase();
-    var st = selStatus.value;
+    var st = selStatus.value, pago = document.getElementById('filtro-pago').value, origem = document.getElementById('filtro-origem').value;
+    var hoje = db.hojeISO();
 
     function nomeCliente(id) { var c = clientes.filter(function (c) { return c.id === id; })[0]; return c ? c.nome : 'Cliente removido'; }
     function nomeProduto(id) { var p = produtos.filter(function (p) { return p.id === id; })[0]; return p ? p.nome : 'Produto removido'; }
 
     var lista = db.listar('pedido').filter(function (p) {
       var texto = ('nº ' + p.id + ' ' + nomeCliente(p.cliente_id)).toLowerCase();
-      var okStatus = !st || (st === 'abertos' ? ['Entregue', 'Cancelado'].indexOf(p.status) === -1 : p.status === st);
-      return okStatus && (!busca || texto.indexOf(busca) !== -1 || String(p.id) === busca);
-    }).sort(function (a, b) { return b.data_pedido.localeCompare(a.data_pedido) || b.id - a.id; });
+      var okStatus = !st || (st === 'abertos' ? FINAIS.indexOf(p.status) === -1 : p.status === st);
+      var okPago = pago === '' || (String(Number(p.pago) === 1 ? 1 : 0) === pago && p.status !== 'Cancelado');
+      return okStatus && okPago && (!origem || p.origem === origem) && (!busca || texto.indexOf(busca) !== -1 || String(p.id) === busca);
+    }).sort(ordem);
 
-    var soma = 0;
+    var soma = 0, receber = 0;
     document.getElementById('lista').innerHTML = lista.length ? lista.map(function (p) {
-      var seus = itens.filter(function (i) { return i.pedido_id === p.id; });
-      var total = seus.reduce(function (s, i) { return s + i.quantidade * i.preco_unitario; }, 0);
-      if (p.status !== 'Cancelado') soma += total;
-      var resumo = seus.map(function (i) { return i.quantidade + '× ' + esc(nomeProduto(i.produto_id)); }).join('<br>');
+      var t = db.totaisPedido(p, itens);
+      var cancelado = p.status === 'Cancelado', pagoOk = Number(p.pago) === 1;
+      if (!cancelado) { soma += t.total; if (!pagoOk) receber += t.total; }
+      var atrasado = !FINAIS.includes(p.status) && p.data_entrega < hoje;
+      var resumo = t.itens.map(function (i) {
+        return i.quantidade + '× ' + esc(nomeProduto(i.produto_id)) + (i.preco_unitario === null ? ' <span class="td-sub-inline">(a combinar)</span>' : '');
+      }).join('<br>');
       var opcoes = db.STATUS_PEDIDO.map(function (s) { return '<option' + (s === p.status ? ' selected' : '') + '>' + s + '</option>'; }).join('');
-      return '<tr>' +
+      var proximo = db.PROXIMO_STATUS[p.status];
+      return '<tr' + (cancelado ? ' class="linha-inativa"' : '') + '>' +
         '<td class="td-nome"><span><span>Nº ' + p.id + ' · ' + esc(nomeCliente(p.cliente_id)) +
-          '<span class="td-sub">' + esc(p.entrega) + (p.observacao ? ' · ' + esc(p.observacao) : '') + '</span></span></span></td>' +
-        '<td data-rotulo="Data">' + db.dataBr(p.data_pedido) + '</td>' +
+          (p.origem === 'Site' ? ' <span class="etiqueta-site">Site</span>' : '') +
+          '<span class="td-sub">' + esc(p.entrega) + (p.endereco ? ': ' + esc(p.endereco) : '') + (p.observacao ? ' · ' + esc(p.observacao) : '') +
+          ' · feito em ' + db.dataBr(p.data_pedido) + '</span></span></span></td>' +
+        '<td data-rotulo="Entrega"' + (atrasado ? ' class="td-atrasado"' : '') + '>' + db.dataCurta(p.data_entrega) + (p.horario ? ' ' + esc(p.horario) : '') + (atrasado ? ' <span class="td-sub-inline">atrasado</span>' : '') + '</td>' +
         '<td data-rotulo="Itens" class="td-quebra">' + (resumo || '—') + '</td>' +
-        '<td data-rotulo="Total">' + db.dinheiro(total) + '</td>' +
-        '<td data-rotulo="Situação"><select aria-label="Situação do pedido ' + p.id + '" data-status="' + p.id + '" style="min-width:8.5rem">' + opcoes + '</select></td>' +
+        '<td data-rotulo="Total" class="td-quebra">' + esc(db.textoTotal(t)) + '</td>' +
+        '<td data-rotulo="Pagamento">' + (cancelado ? '—'
+          : '<button type="button" class="pagamento ' + (pagoOk ? 'pagamento-ok' : '') + '" data-pago="' + p.id + '" aria-pressed="' + pagoOk + '" title="Clique para alternar">' +
+            esc(p.forma_pagamento) + ': ' + (pagoOk ? 'pago' : 'a receber') + '</button>') + '</td>' +
+        '<td data-rotulo="Situação"><span class="situacao"><select aria-label="Situação do pedido ' + p.id + '" data-status="' + p.id + '">' + opcoes + '</select>' +
+          (proximo ? '<button type="button" class="botao botao-mini" data-proximo="' + p.id + '">Marcar ' + esc(proximo.toLowerCase()) + '</button>' : '') + '</span></td>' +
         '<td class="td-acoes">' +
           '<a class="botao botao-claro botao-mini" href="pedido-form.html?id=' + p.id + '">Editar</a>' +
           '<button class="botao botao-claro botao-mini" type="button" data-excluir="' + p.id + '">Excluir</button>' +
         '</td></tr>';
-    }).join('') : '<tr><td class="tabela-vazia" colspan="6">Nenhum pedido encontrado.</td></tr>';
+    }).join('') : '<tr><td class="tabela-vazia" colspan="7">Nenhum pedido encontrado.</td></tr>';
 
-    document.getElementById('contador').innerHTML = lista.length + ' pedido(s) · Total (sem cancelados): <b>' + db.dinheiro(soma) + '</b>';
+    document.getElementById('contador').innerHTML = lista.length + ' pedido(s) · Total (sem cancelados): <b>' + db.dinheiro(soma) + '</b> · A receber: <b>' + db.dinheiro(receber) + '</b>';
+  }
+
+  function mudarStatus(id, status) {
+    var p = db.buscar('pedido', id);
+    p.status = status;
+    db.salvar('pedido', p);
+    desenhar();
+    avisar('Pedido nº ' + p.id + ' agora está como “' + p.status + '”.');
+    var sel = document.querySelector('[data-status="' + id + '"]');
+    if (sel) sel.focus();
   }
 
   document.getElementById('lista').addEventListener('change', function (e) {
-    var id = e.target.dataset.status;
-    if (!id) return;
-    var p = db.buscar('pedido', id);
-    p.status = e.target.value;
-    db.salvar('pedido', p);
-    var aviso = document.querySelector('[data-aviso]');
-    aviso.className = 'aviso';
-    aviso.textContent = 'Pedido nº ' + p.id + ' agora está como “' + p.status + '”.';
-    aviso.hidden = false;
+    if (e.target.dataset.status) mudarStatus(e.target.dataset.status, e.target.value);
   });
 
   document.getElementById('lista').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-excluir]');
+    var b = e.target.closest('button');
     if (!b) return;
+    if (b.dataset.proximo) { mudarStatus(b.dataset.proximo, db.PROXIMO_STATUS[db.buscar('pedido', b.dataset.proximo).status]); return; }
+    if (b.dataset.pago) {
+      var p = db.buscar('pedido', b.dataset.pago);
+      p.pago = Number(p.pago) === 1 ? 0 : 1;
+      db.salvar('pedido', p);
+      desenhar();
+      avisar('Pedido nº ' + p.id + ': pagamento ' + (p.pago ? 'confirmado.' : 'marcado como a receber.'));
+      var nb = document.querySelector('[data-pago="' + p.id + '"]'); if (nb) nb.focus();
+      return;
+    }
+    if (!b.dataset.excluir) return;
     var id = Number(b.dataset.excluir);
     Admin.confirmar({
       titulo: 'Excluir o pedido nº ' + id + '?',
@@ -154,7 +206,7 @@
     });
   });
 
-  ['busca', 'filtro-status'].forEach(function (id) { document.getElementById(id).addEventListener('input', desenhar); });
+  ['busca', 'filtro-status', 'filtro-pago', 'filtro-origem'].forEach(function (id) { document.getElementById(id).addEventListener('input', desenhar); });
   desenhar();
 </script>
 </body>

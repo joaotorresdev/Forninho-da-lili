@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedido | Painel Forninho da Lili</title>
 <link rel="icon" href="../assets/img/logo-selo.jpg">
-<link rel="stylesheet" href="../assets/css/estilo.css">
-<link rel="stylesheet" href="assets/admin.css">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
 <!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
-<script src="../assets/js/dados.js"></script>
-<script src="assets/admin.js"></script>
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
 </head>
 <body class="admin-corpo">
 
@@ -35,9 +35,13 @@
   <div class="painel">
     <nav class="painel-menu" aria-label="Menu do painel">
       <a href="painel.html">Visão geral</a>
-      <a class="ativo" href="pedidos.html" aria-current="page">Pedidos</a>
+      <a class="ativo" href="pedidos.html">Pedidos</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="producao.html">Produção</a>
       <a href="produtos.html">Produtos</a>
+      <a href="banner.html">Página inicial</a>
       <a href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
     </nav>
 
     <main class="painel-corpo">
@@ -61,8 +65,20 @@
             <a class="dica" href="cliente-form.html?voltar=pedido">+ Cadastrar cliente novo</a>
           </div>
           <div class="campo">
-            <label for="data_pedido">Data do pedido <span class="obrigatorio">*</span></label>
+            <label for="data_pedido">Feito em <span class="obrigatorio">*</span></label>
             <input type="date" id="data_pedido" name="data_pedido" required>
+          </div>
+        </div>
+
+        <div class="campos-lado">
+          <div class="campo">
+            <label for="data_entrega">Data de entrega ou retirada <span class="obrigatorio">*</span></label>
+            <input type="date" id="data_entrega" name="data_entrega" required aria-describedby="aviso-data">
+            <span class="dica" id="aviso-data"></span>
+          </div>
+          <div class="campo">
+            <label for="horario">Horário</label>
+            <input type="time" id="horario" name="horario">
           </div>
         </div>
 
@@ -77,17 +93,41 @@
           </div>
         </div>
 
+        <div class="campos-lado" id="campos-entrega">
+          <div class="campo">
+            <label for="endereco">Endereço de entrega</label>
+            <input type="text" id="endereco" name="endereco" maxlength="160">
+          </div>
+          <div class="campo">
+            <label for="taxa_entrega">Taxa de entrega (R$)</label>
+            <input type="number" id="taxa_entrega" name="taxa_entrega" min="0" step="0.01" inputmode="decimal">
+            <span class="dica">Vazio = a combinar.</span>
+          </div>
+        </div>
+
+        <div class="campos-lado">
+          <div class="campo">
+            <label for="forma_pagamento">Forma de pagamento</label>
+            <select id="forma_pagamento" name="forma_pagamento"></select>
+          </div>
+          <div class="campo campo-check">
+            <label class="opcao"><input type="checkbox" name="pago"> Pagamento confirmado</label>
+            <span class="dica">Marque depois de conferir o PIX ou receber o dinheiro.</span>
+          </div>
+        </div>
+
         <fieldset>
           <legend>Itens do pedido</legend>
           <div class="itens-pedido" id="itens"></div>
           <div><button class="botao botao-claro botao-mini" type="button" id="adicionar-item">+ Adicionar item</button></div>
-          <p class="dica">O preço vem do cardápio, mas pode ser ajustado (ex.: kit personalizado). Mudar o preço de um produto depois não altera pedidos já feitos.</p>
+          <p class="dica">O preço vem do cardápio, mas pode ser ajustado (ex.: kit personalizado). Deixe vazio se ainda vai combinar com a cliente. Mudar o preço de um produto depois não altera pedidos já feitos.</p>
           <div class="total-pedido"><span>Total do pedido</span><strong id="total">R$ 0,00</strong></div>
+          <p class="dica" id="total-detalhe"></p>
         </fieldset>
 
         <div class="campo">
           <label for="observacao">Observações</label>
-          <textarea id="observacao" name="observacao" rows="2" maxlength="240" placeholder="Ex.: endereço, horário, tema da festa…"></textarea>
+          <textarea id="observacao" name="observacao" rows="2" maxlength="240" placeholder="Ex.: tema da festa, dedicatória do cartão…"></textarea>
         </div>
 
         <div class="form-acoes">
@@ -108,6 +148,27 @@
   db.listar('cliente').sort(function (a, b) { return a.nome.localeCompare(b.nome); })
     .forEach(function (c) { form.cliente_id.add(new Option(c.nome, c.id)); });
   db.STATUS_PEDIDO.forEach(function (s) { form.status.add(new Option(s, s)); });
+  db.FORMAS_PAGAMENTO.forEach(function (s) { form.forma_pagamento.add(new Option(s, s)); });
+
+  function mostrarCamposEntrega() {
+    document.getElementById('campos-entrega').hidden = form.entrega.value !== 'Entrega';
+    atualizarTotal();
+  }
+  form.entrega.addEventListener('change', mostrarCamposEntrega);
+  form.taxa_entrega.addEventListener('input', atualizarTotal);
+
+  // Avisa (sem bloquear) se a data cai em folga, fora da antecedência ou num dia cheio
+  function conferirData() {
+    var aviso = document.getElementById('aviso-data');
+    var c = db.config(), d = form.data_entrega.value, msgs = [];
+    if (d && db.ehFolga(d)) msgs.push('Atenção: é dia de folga.');
+    var limite = Number(c.limite_pedidos_dia) || 0;
+    var outros = d ? db.pedidosNoDia(d, Number(form.id.value) || null) : 0;
+    if (d && limite && outros >= limite) msgs.push('Atenção: o limite de ' + limite + ' pedidos já foi atingido nesse dia.');
+    else if (d) msgs.push(outros + ' outro(s) pedido(s) nesse dia' + (limite ? ', limite de ' + limite : '') + '.');
+    aviso.textContent = msgs.join(' ');
+  }
+  form.data_entrega.addEventListener('change', conferirData);
 
   function hojeISO() {
     var d = new Date();
@@ -144,14 +205,26 @@
   }
 
   function atualizarTotal() {
-    var total = 0;
+    var subtotal = 0, aCombinar = false;
     caixaItens.querySelectorAll('.item-pedido').forEach(function (l) {
       var q = Number(l.querySelector('[data-campo="quantidade"]').value) || 0;
-      var pr = Number(l.querySelector('[data-campo="preco"]').value) || 0;
+      var campoPreco = l.querySelector('[data-campo="preco"]');
+      var temProduto = l.querySelector('[data-campo="produto"]').value;
+      if (campoPreco.value === '') {
+        l.querySelector('.subtotal').textContent = temProduto ? 'A combinar' : 'R$ 0,00';
+        if (temProduto) aCombinar = true;
+        return;
+      }
+      var pr = Number(campoPreco.value) || 0;
       l.querySelector('.subtotal').textContent = db.dinheiro(q * pr);
-      total += q * pr;
+      subtotal += q * pr;
     });
-    document.getElementById('total').textContent = db.dinheiro(total);
+    if (!form.entrega) return;
+    var entrega = form.entrega.value === 'Entrega';
+    var taxa = entrega ? db.numeroOuNulo(form.taxa_entrega.value) : 0;
+    var t = { subtotal: subtotal, taxa: taxa || 0, taxaPendente: entrega && taxa === null, aCombinar: aCombinar, total: subtotal + (taxa || 0) };
+    document.getElementById('total').textContent = db.textoTotal(t);
+    document.getElementById('total-detalhe').textContent = entrega ? 'Produtos ' + db.dinheiro(subtotal) + ' + entrega ' + (taxa === null ? 'a combinar' : db.dinheiro(taxa)) + '.' : '';
   }
 
   caixaItens.addEventListener('change', function (e) {
@@ -186,13 +259,27 @@
       form.status.value = pedido.status;
       form.entrega.value = pedido.entrega;
       form.observacao.value = pedido.observacao || '';
+      form.data_entrega.value = pedido.data_entrega || pedido.data_pedido;
+      form.horario.value = pedido.horario || '';
+      form.endereco.value = pedido.endereco || '';
+      form.taxa_entrega.value = pedido.taxa_entrega === null || pedido.taxa_entrega === undefined ? '' : pedido.taxa_entrega;
+      form.forma_pagamento.value = pedido.forma_pagamento || 'PIX';
+      form.pago.checked = Number(pedido.pago) === 1;
+      if (pedido.origem === 'Site') {
+        document.querySelector('#titulo-form').insertAdjacentHTML('afterend', '<p class="subtitulo">Pedido feito pelo carrinho do site. Confira os valores com a cliente.</p>');
+      }
       db.listar('pedido_item').filter(function (i) { return i.pedido_id === pedido.id; }).forEach(novaLinha);
     }
   } else {
     form.data_pedido.value = hojeISO();
+    form.data_entrega.value = hojeISO();
+    var taxaPadrao = db.config().taxa_entrega;
+    form.taxa_entrega.value = taxaPadrao === null || taxaPadrao === undefined ? '' : taxaPadrao;
     if (Admin.param('cliente')) form.cliente_id.value = Admin.param('cliente');
   }
   if (!caixaItens.children.length) novaLinha();
+  mostrarCamposEntrega();
+  conferirData();
 
   // ----- Salvar: pedido + itens (no SQLite: INSERT em pedido e em pedido_item) -----
   form.addEventListener('submit', function (e) {
@@ -200,7 +287,8 @@
     var aviso = document.querySelector('[data-aviso]');
     var erros = [];
     if (!form.cliente_id.value) erros.push('Escolha o cliente.');
-    if (!form.data_pedido.value) erros.push('Informe a data.');
+    if (!form.data_pedido.value) erros.push('Informe a data do pedido.');
+    if (!form.data_entrega.value) erros.push('Informe a data de entrega ou retirada.');
 
     var itens = [];
     caixaItens.querySelectorAll('.item-pedido').forEach(function (l) {
@@ -210,8 +298,9 @@
       if (!prod && !pr) return; // linha vazia é ignorada
       if (!prod) { erros.push('Há um item sem produto escolhido.'); return; }
       if (!(Number(q) >= 1)) { erros.push('A quantidade precisa ser 1 ou mais.'); return; }
-      if (pr === '' || Number(pr) < 0) { erros.push('Informe o preço de todos os itens.'); return; }
-      itens.push({ produto_id: Number(prod), quantidade: Math.round(Number(q)), preco_unitario: Math.round(Number(pr) * 100) / 100 });
+      if (pr !== '' && Number(pr) < 0) { erros.push('O preço não pode ser negativo.'); return; }
+      // Preço vazio = a combinar (fica NULL no banco)
+      itens.push({ produto_id: Number(prod), quantidade: Math.round(Number(q)), preco_unitario: pr === '' ? null : Math.round(Number(pr) * 100) / 100 });
     });
     if (!itens.length && !erros.length) erros.push('Adicione pelo menos um item.');
 
@@ -230,7 +319,14 @@
       data_pedido: form.data_pedido.value,
       status: form.status.value,
       entrega: form.entrega.value,
-      observacao: form.observacao.value.trim()
+      observacao: form.observacao.value.trim(),
+      data_entrega: form.data_entrega.value,
+      horario: form.horario.value,
+      endereco: form.entrega.value === 'Entrega' ? form.endereco.value.trim() : '',
+      taxa_entrega: form.entrega.value === 'Entrega' ? db.numeroOuNulo(form.taxa_entrega.value) : null,
+      forma_pagamento: form.forma_pagamento.value,
+      pago: form.pago.checked ? 1 : 0,
+      origem: novo ? 'Painel' : (db.buscar('pedido', form.id.value).origem || 'Painel')
     });
     db.excluirOnde('pedido_item', 'pedido_id', pedidoId);
     itens.forEach(function (i) { i.pedido_id = pedidoId; db.salvar('pedido_item', i); });

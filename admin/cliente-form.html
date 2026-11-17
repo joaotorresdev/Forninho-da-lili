@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Cliente | Painel Forninho da Lili</title>
 <link rel="icon" href="../assets/img/logo-selo.jpg">
-<link rel="stylesheet" href="../assets/css/estilo.css">
-<link rel="stylesheet" href="assets/admin.css">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
 <!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
-<script src="../assets/js/dados.js"></script>
-<script src="assets/admin.js"></script>
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
 </head>
 <body class="admin-corpo">
 
@@ -36,8 +36,12 @@
     <nav class="painel-menu" aria-label="Menu do painel">
       <a href="painel.html">Visão geral</a>
       <a href="pedidos.html">Pedidos</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="producao.html">Produção</a>
       <a href="produtos.html">Produtos</a>
-      <a class="ativo" href="clientes.html" aria-current="page">Clientes</a>
+      <a href="banner.html">Página inicial</a>
+      <a class="ativo" href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
     </nav>
 
     <main class="painel-corpo">
@@ -57,6 +61,12 @@
         <div class="campo">
           <label for="nome">Nome <span class="obrigatorio">*</span></label>
           <input type="text" id="nome" name="nome" maxlength="80" autocomplete="off" required>
+        </div>
+
+        <div class="campo">
+          <label for="cpf">CPF</label>
+          <input type="text" id="cpf" name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="off" aria-describedby="dica-cpf">
+          <p class="dica" id="dica-cpf">Clientes que compram pelo site já chegam com CPF conferido.</p>
         </div>
 
         <div class="campos-lado">
@@ -100,26 +110,38 @@
     else {
       document.getElementById('titulo-form').textContent = 'Editar cliente';
       document.title = 'Editar cliente | Painel Forninho da Lili';
-      ['id', 'nome', 'telefone', 'cidade', 'email'].forEach(function (k) { form[k].value = c[k] || ''; });
+      ['id', 'nome', 'cpf', 'telefone', 'cidade', 'email'].forEach(function (k) { form[k].value = c[k] || ''; });
     }
   }
 
-  // Máscara simples de telefone: (11) 98765-4321
-  form.telefone.addEventListener('input', function () {
-    var n = form.telefone.value.replace(/\D/g, '').slice(0, 11);
-    var t = n;
-    if (n.length > 2) t = '(' + n.slice(0, 2) + ') ' + n.slice(2);
-    if (n.length > 7) t = '(' + n.slice(0, 2) + ') ' + n.slice(2, n.length - 4) + '-' + n.slice(-4);
-    form.telefone.value = t;
-  });
+  // Máscaras: (11) 97412-3086 e 000.000.000-00
+  form.telefone.addEventListener('input', function () { form.telefone.value = db.mascaraTelefone(form.telefone.value); });
+  form.cpf.addEventListener('input', function () { form.cpf.value = db.formatarCpf(form.cpf.value); });
+
+  /* Mesmas regras do site, um pouco mais flexíveis: o painel aceita só o primeiro nome
+     (ex.: cliente conhecida por apelido) e telefone fixo com 10 números. */
+  function problemaTelefone(v) {
+    var n = db.soDigitos(v);
+    if (!n) return '';
+    if (n.length === 10) return /^(\d)\1+$/.test(n.slice(2)) ? 'Esse telefone não parece real.' : '';
+    return db.problemaCelular(v);
+  }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var aviso = document.querySelector('[data-aviso]');
-    var nome = form.nome.value.trim();
+    var nome = form.nome.value.trim().replace(/\s+/g, ' ');
     var email = form.email.value.trim();
+    var cpf = db.soDigitos(form.cpf.value);
+    var erroNome = db.problemaNome(nome);
+    if (erroNome === 'Informe nome e sobrenome.' || erroNome === 'Escreva o nome e o sobrenome por extenso.') erroNome = '';
+    var repetido = cpf && db.listar('cliente').filter(function (c) { return db.soDigitos(c.cpf) === cpf && String(c.id) !== form.id.value; })[0];
     var erro = '';
     if (!nome) erro = 'Informe o nome do cliente.';
+    else if (erroNome) erro = erroNome.replace('Use seu nome', 'Use o nome');
+    else if (cpf && db.problemaCpf(cpf)) erro = db.problemaCpf(cpf);
+    else if (repetido) erro = 'Esse CPF já está no cadastro de ' + repetido.nome + '.';
+    else if (problemaTelefone(form.telefone.value)) erro = problemaTelefone(form.telefone.value).replace('Use o WhatsApp em que a Lili pode falar com você.', 'Confira com a cliente.').replace('Informe o seu WhatsApp.', 'Informe o da cliente.');
     else if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) erro = 'O e-mail parece incompleto.';
     if (erro) { aviso.className = 'aviso aviso-erro'; aviso.textContent = erro; aviso.hidden = false; return; }
 
@@ -127,6 +149,7 @@
     var clienteId = db.salvar('cliente', {
       id: novo ? null : Number(form.id.value),
       nome: nome,
+      cpf: cpf ? db.formatarCpf(cpf) : '',
       telefone: form.telefone.value.trim(),
       cidade: form.cidade.value.trim(),
       email: email

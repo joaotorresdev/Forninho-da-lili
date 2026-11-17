@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Produto | Painel Forninho da Lili</title>
 <link rel="icon" href="../assets/img/logo-selo.jpg">
-<link rel="stylesheet" href="../assets/css/estilo.css">
-<link rel="stylesheet" href="assets/admin.css">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
 <!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
-<script src="../assets/js/dados.js"></script>
-<script src="assets/admin.js"></script>
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
 </head>
 <body class="admin-corpo">
 
@@ -36,8 +36,12 @@
     <nav class="painel-menu" aria-label="Menu do painel">
       <a href="painel.html">Visão geral</a>
       <a href="pedidos.html">Pedidos</a>
-      <a class="ativo" href="produtos.html" aria-current="page">Produtos</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="producao.html">Produção</a>
+      <a class="ativo" href="produtos.html">Produtos</a>
+      <a href="banner.html">Página inicial</a>
       <a href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
     </nav>
 
     <main class="painel-corpo">
@@ -78,8 +82,34 @@
         </div>
 
         <div class="campo">
-          <label for="alergia">Aviso para alérgicos</label>
-          <input type="text" id="alergia" name="alergia" maxlength="120" placeholder="Ex.: Contém glúten, leite e ovos.">
+          <span class="rotulo" id="rotulo-alergicos">Alérgicos que o produto contém</span>
+          <div class="checks" role="group" aria-labelledby="rotulo-alergicos" id="alergicos"></div>
+          <label for="alergia">Aviso para alérgicos (aparece no cardápio)</label>
+          <input type="text" id="alergia" name="alergia" maxlength="120" placeholder="Ex.: Contém glúten, leite e ovos." aria-describedby="dica-alergia">
+          <span class="dica" id="dica-alergia">Marcar as caixinhas preenche o aviso. Você pode completar o texto à mão.</span>
+        </div>
+
+        <div class="campos-lado">
+          <div class="campo">
+            <label for="quantidade_minima">Quantidade mínima por pedido</label>
+            <input type="number" id="quantidade_minima" name="quantidade_minima" min="1" step="1" value="1">
+            <span class="dica">Ex.: 12 para docinhos vendidos por dúzia.</span>
+          </div>
+          <div class="campo">
+            <label for="tamanho">Tamanho ou peso</label>
+            <input type="text" id="tamanho" name="tamanho" maxlength="60">
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="ingredientes">Ingredientes</label>
+          <textarea id="ingredientes" name="ingredientes" rows="2" maxlength="300"></textarea>
+        </div>
+
+        <div class="campo">
+          <label for="conservacao">Conservação e validade</label>
+          <input type="text" id="conservacao" name="conservacao" maxlength="120" placeholder="Ex.: manter na geladeira, consumir em até 3 dias">
+          <span class="dica">Ingredientes, conservação e tamanho aparecem em “Ficha do produto” no cardápio, só se forem preenchidos.</span>
         </div>
 
         <fieldset>
@@ -120,6 +150,20 @@
 
   db.CATEGORIAS.forEach(function (c) { form.categoria.add(new Option(c.nome, c.id)); });
 
+  // ----- Caixinhas de alérgicos: montam o texto "Contém ..." -----
+  var caixaAlergicos = document.getElementById('alergicos');
+  caixaAlergicos.innerHTML = db.ALERGICOS.map(function (a) {
+    return '<label class="opcao"><input type="checkbox" value="' + a + '"> ' + a.charAt(0).toUpperCase() + a.slice(1) + '</label>';
+  }).join('');
+  function marcarAlergicos(texto) {
+    var t = String(texto || '').toLowerCase();
+    caixaAlergicos.querySelectorAll('input').forEach(function (c) { c.checked = t.indexOf(c.value) !== -1; });
+  }
+  caixaAlergicos.addEventListener('change', function () {
+    var marcados = [].slice.call(caixaAlergicos.querySelectorAll('input:checked')).map(function (c) { return c.value; });
+    form.alergia.value = marcados.length ? 'Contém ' + db.listaPt(marcados) + '.' : '';
+  });
+
   // ----- Edição: ?id= na URL -----
   var id = Admin.param('id');
   if (id) {
@@ -134,6 +178,11 @@
       form.preco.value = p.preco === null ? '' : p.preco;
       form.descricao.value = p.descricao || '';
       form.alergia.value = p.alergia || '';
+      marcarAlergicos(p.alergia);
+      form.quantidade_minima.value = p.quantidade_minima || 1;
+      form.tamanho.value = p.tamanho || '';
+      form.ingredientes.value = p.ingredientes || '';
+      form.conservacao.value = p.conservacao || '';
       form.imagem_alt.value = p.imagem_alt || '';
       form.ativo.checked = Number(p.ativo) === 1;
       definirImagem(p.imagem || '');
@@ -199,6 +248,10 @@
       preco: preco === '' ? null : Math.round(Number(preco) * 100) / 100,
       descricao: form.descricao.value.trim(),
       alergia: form.alergia.value.trim(),
+      quantidade_minima: Math.max(1, Math.round(Number(form.quantidade_minima.value)) || 1),
+      tamanho: form.tamanho.value.trim(),
+      ingredientes: form.ingredientes.value.trim(),
+      conservacao: form.conservacao.value.trim(),
       imagem: form.imagem.value,
       imagem_alt: form.imagem_alt.value.trim(),
       ativo: form.ativo.checked ? 1 : 0

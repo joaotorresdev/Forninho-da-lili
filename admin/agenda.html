@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- O painel nunca deve aparecer no Google -->
+<meta name="robots" content="noindex, nofollow">
+<title>Agenda | Painel Forninho da Lili</title>
+<link rel="icon" href="../assets/img/logo-selo.jpg">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
+<!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
+</head>
+<body class="admin-corpo">
+
+<!-- =================== TOPO DO PAINEL (igual em todas as páginas) =================== -->
+<header class="admin-topo">
+  <a class="logo" href="painel.html" aria-label="Painel do Forninho da Lili, visão geral">
+    <img class="logo-selo" src="../assets/img/logo-selo.jpg" alt="" width="44" height="44">
+    <span class="logo-forninho">Forninho</span>
+    <span class="logo-da">da</span>
+    <span class="logo-lili">Lili</span>
+    <span class="logo-papel">Painel</span>
+  </a>
+  <div class="admin-usuario">
+    <span>Olá, <strong data-nome-usuario>Lili</strong></span>
+    <a href="../index.html" target="_blank" rel="noopener">Ver o site</a>
+    <button class="botao botao-mini botao-sair" type="button" data-sair>Sair</button>
+  </div>
+</header>
+
+<div class="admin-app">
+  <div class="painel">
+    <nav class="painel-menu" aria-label="Menu do painel">
+      <a href="painel.html">Visão geral</a>
+      <a href="pedidos.html">Pedidos</a>
+      <a class="ativo" href="agenda.html" aria-current="page">Agenda</a>
+      <a href="producao.html">Produção</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="banner.html">Página inicial</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
+    </nav>
+
+    <main class="painel-corpo">
+      <div class="painel-topo">
+        <div>
+          <h1>Agenda</h1>
+          <p class="subtitulo">Pedidos pela data de entrega ou retirada, nos próximos 30 dias.</p>
+        </div>
+        <a class="botao" href="pedido-form.html">+ Novo pedido</a>
+      </div>
+
+      <section class="bloco bloco-alerta" id="atrasados" hidden aria-labelledby="t-atrasados">
+        <h2 id="t-atrasados">Pendentes de dias anteriores</h2>
+        <ul class="lista-agenda" id="lista-atrasados"></ul>
+      </section>
+
+      <div class="agenda" id="agenda"></div>
+      <p class="rodape-tabela">Limite de pedidos por dia e dias de folga ficam em <a href="configuracoes.html">Configurações</a>.</p>
+    </main>
+  </div>
+</div>
+
+<script>
+  var db = LojaDB, esc = db.esc;
+  var clientes = db.listar('cliente');
+  var pedidos = db.listar('pedido');
+  var itens = db.listar('pedido_item');
+  var hoje = db.hojeISO();
+  var limite = Number(db.config().limite_pedidos_dia) || 0;
+  var FINAIS = ['Entregue', 'Cancelado'];
+
+  function nomeCliente(id) { var c = clientes.filter(function (c) { return c.id === id; })[0]; return c ? c.nome : 'Cliente removido'; }
+  function porHorario(a, b) { return (a.horario || '99').localeCompare(b.horario || '99') || a.id - b.id; }
+
+  function linhas(lista, mostrarData) {
+    return lista.map(function (p) {
+      var t = db.totaisPedido(p, itens);
+      return '<li><span class="agenda-quando">' + (mostrarData ? db.dataCurta(p.data_entrega) + ' ' : '') + (p.horario ? esc(p.horario) : 'Sem horário') + '</span>' +
+        '<span><a href="pedido-form.html?id=' + p.id + '">Nº ' + p.id + '</a>, ' + esc(nomeCliente(p.cliente_id)) +
+        ' <span class="td-sub-inline">' + esc(p.entrega.toLowerCase()) + ', ' + t.unidades + ' itens, ' + esc(db.textoTotal(t)) + (Number(p.pago) === 1 ? ', pago' : ', a receber') + '</span></span>' +
+        '<span class="' + Admin.classeStatus(p.status) + '">' + esc(p.status) + '</span></li>';
+    }).join('');
+  }
+
+  var atrasados = pedidos.filter(function (p) { return p.data_entrega < hoje && FINAIS.indexOf(p.status) === -1; })
+    .sort(function (a, b) { return a.data_entrega.localeCompare(b.data_entrega) || porHorario(a, b); });
+  if (atrasados.length) {
+    document.getElementById('atrasados').hidden = false;
+    document.getElementById('lista-atrasados').innerHTML = linhas(atrasados, true);
+  }
+
+  var dias = [];
+  for (var i = 0; i < 30; i++) {
+    var d = db.somarDias(hoje, i);
+    var doDia = pedidos.filter(function (p) { return p.data_entrega === d && p.status !== 'Cancelado'; }).sort(porHorario);
+    var folga = db.ehFolga(d);
+    if (doDia.length || folga) dias.push({ data: d, pedidos: doDia, folga: folga });
+  }
+
+  document.getElementById('agenda').innerHTML = dias.length ? dias.map(function (dia) {
+    var n = dia.pedidos.length;
+    var cheia = limite && n >= limite;
+    var capacidade = dia.folga ? 'Folga' : (limite ? n + ' de ' + limite + ' pedidos' : n + (n === 1 ? ' pedido' : ' pedidos'));
+    return '<section class="dia' + (dia.folga ? ' dia-folga' : '') + '">' +
+      '<div class="dia-topo"><h2>' + db.dataLonga(dia.data) + (dia.data === hoje ? ' <span class="status status-novo">Hoje</span>' : '') + '</h2>' +
+      '<span class="capacidade' + (cheia ? ' cheia' : '') + '">' + capacidade + (cheia ? ', agenda cheia no site' : '') + '</span></div>' +
+      (n ? '<ul class="lista-agenda">' + linhas(dia.pedidos, false) + '</ul><a class="link-producao" href="producao.html?data=' + dia.data + '">Ver lista de produção do dia</a>' : '<p class="dica">A Lili não atende nesse dia. O site não deixa escolher esta data.</p>') +
+      '</section>';
+  }).join('') : '<div class="bloco"><p class="dica">Nenhum pedido ou folga nos próximos 30 dias.</p></div>';
+</script>
+</body>
+</html>

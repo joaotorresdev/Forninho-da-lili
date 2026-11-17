@@ -327,3 +327,138 @@
 
   .barras-largas { grid-template-columns: repeat(2, 1fr); gap: .9rem 2.5rem; }
 }
+
+/* ==========================================================
+   MELHORIAS: pagamento, origem, agenda, produção e configurações
+   ========================================================== */
+.metrica-sub { margin-top: .15rem; font-family: var(--fonte-texto) !important; font-size: .8125rem !important; font-weight: 400 !important; color: var(--marrom-suave); }
+
+.badge { display: inline-grid; place-items: center; min-width: 1.35rem; height: 1.35rem; margin-left: .25rem; padding: 0 .3rem; border-radius: 999px; background: var(--rosa-forte); color: var(--branco); font-size: .75rem; font-weight: 700; }
+
+.etiqueta-site { display: inline-block; margin-left: .25rem; padding: 0 .45rem; border-radius: .3rem; background: var(--marrom); color: var(--baunilha); font-size: .75rem; font-weight: 700; vertical-align: .1em; }
+
+.aviso-novos a { color: inherit; }
+
+.td-sub-inline { font-size: .875rem; font-weight: 400; color: var(--marrom-suave); }
+
+.td-atrasado { color: var(--rosa-hover); font-weight: 700; }
+
+/* Botão de pagamento: alterna entre "a receber" e "pago" */
+.pagamento { min-height: 2.25rem; padding: .2rem .7rem; border: 1.5px solid #E8C9A0; border-radius: 999px; background: #FBF0D4; color: #7A5A00; font: inherit; font-size: .875rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+
+.pagamento-ok { border-color: #BFE3CC; background: #E3F1E7; color: #2F6B45; }
+
+.situacao { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .35rem; }
+
+.situacao select { min-width: 8.5rem; }
+
+/* Listas de agenda (painel e agenda) */
+.lista-agenda { display: grid; }
+
+.lista-agenda li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .2rem 1rem; padding-block: .6rem; border-bottom: 1px solid var(--linha); }
+
+.lista-agenda li:last-child { border-bottom: 0; }
+
+.lista-agenda li > span:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+
+.agenda-quando { font-weight: 700; }
+
+.agenda { display: grid; gap: .85rem; margin-top: 1.25rem; }
+
+.dia { padding: 1rem 1.25rem; border: 1px solid var(--linha); border-radius: var(--raio); background: var(--branco); }
+
+.dia-folga { background: repeating-linear-gradient(135deg, var(--branco) 0 10px, #FBF4F1 10px 20px); }
+
+.dia-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem 1rem; }
+
+.dia-topo h2 { font-size: 1.0625rem; }
+
+.capacidade { font-size: .875rem; font-weight: 700; color: var(--marrom-suave); }
+
+.capacidade.cheia { color: var(--rosa-hover); }
+
+.link-producao { display: inline-flex; align-items: center; min-height: 2.5rem; color: var(--rosa-forte); font-size: .9375rem; font-weight: 600; text-underline-offset: 3px; }
+
+.bloco-alerta { margin-top: 1.25rem; border-color: #E8B4B4; background: #FFF6F6; }
+
+.bloco-alerta h2 { margin-bottom: .25rem; }
+
+/* Produção */
+.titulo-dia { margin-top: 1rem; font-family: var(--fonte-titulo); font-size: 1.25rem; font-weight: 600; }
+
+.lista-producao { display: grid; gap: 1rem; margin-top: .5rem; }
+
+.lista-producao ul { margin: .35rem 0 0 1.1rem; list-style: disc; }
+
+.obs { margin-top: .4rem; padding: .5rem .75rem; border-radius: .4rem; background: #FBF0D4; font-size: .9375rem; }
+
+/* Configurações */
+.form-admin + .form-admin { margin-top: 1.25rem; }
+
+.titulo-secao { font-size: 1.125rem; }
+
+.lista-folgas { display: grid; }
+
+.lista-folgas li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding-block: .5rem; border-bottom: 1px solid var(--linha); }
+
+.lista-folgas li:last-child { border-bottom: 0; }
+
+.checks { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; padding-block: .25rem .5rem; }
+
+.checks .opcao { font-weight: 400; }
+
+.campo-check { align-content: end; }
+
+.admin-corpo [aria-invalid="true"] { border-color: var(--rosa-hover); box-shadow: 0 0 0 1px var(--rosa-hover); }
+
+@media (min-width: 47.5em) {
+  .metricas-5 { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+  .lista-agenda li { grid-template-columns: 7.5rem 1fr auto; }
+  .lista-agenda li > span:nth-child(2) { grid-column: auto; grid-row: auto; }
+  .tabela-pedidos td[data-rotulo="Situação"] { white-space: normal; }
+}
+
+@media print {
+  .admin-topo, .painel-menu, .painel-topo .botao, .ferramentas, .zona-demo { display: none !important; }
+  .admin-corpo, .titulo-dia { background: #FFFFFF; color: #000000; }
+  .painel { box-shadow: none; }
+}
+
+/* O atributo hidden sempre vence o display dos componentes */
+.admin-corpo [hidden] { display: none !important; }
+
+/* Campo lado a lado não estica quando o vizinho tem dica */
+.campos-lado > .campo { align-content: start; }
+
+.td-nome a { white-space: nowrap; }
+
+/* Página inicial (banner) e QR code */
+.banner-edicao { display: grid; gap: 1.25rem; }
+
+@media (min-width: 64em) { .banner-edicao { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; } .previa-banner { position: sticky; top: 1rem; } }
+
+.foto-campo-banner { display: grid; grid-template-columns: 8rem minmax(0, 1fr); align-items: start; gap: 1rem; }
+
+.previa-imagem { display: grid; place-items: center; width: 8rem; aspect-ratio: 1; overflow: hidden; border-radius: .5rem; background: var(--rosa-claro); color: var(--marrom-suave); font-size: .875rem; }
+
+.previa-imagem img { width: 100%; height: 100%; object-fit: contain; }
+
+.previa-qr { border: 1px solid var(--linha); background: var(--branco); }
+
+.previa-banner { padding: 1rem; border: 1px solid var(--linha); border-radius: var(--raio); background: var(--branco); }
+
+.previa-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; overflow: hidden; margin-top: .75rem; border-radius: .5rem; background: var(--rosa-claro); }
+
+.previa-hero-texto { display: grid; gap: .4rem; padding: 1rem; font-size: .8125rem; }
+
+.previa-titulo { font-family: var(--fonte-titulo); font-size: 1.375rem; font-weight: 600; line-height: 1.1; }
+
+.previa-botao { justify-self: start; padding: .3rem .6rem; border-radius: .4rem; background: var(--rosa-forte); color: var(--branco); font-weight: 600; }
+
+.previa-hero img { width: 100%; height: auto; }
+
+.previa-destaques { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: .75rem; font-size: .75rem; }
+
+.previa-destaques strong { display: block; font-family: var(--fonte-titulo); font-size: .875rem; }
+
+.previa-destaques span { color: var(--marrom-suave); }

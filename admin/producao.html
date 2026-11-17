@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- O painel nunca deve aparecer no Google -->
+<meta name="robots" content="noindex, nofollow">
+<title>Produção | Painel Forninho da Lili</title>
+<link rel="icon" href="../assets/img/logo-selo.jpg">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
+<!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
+</head>
+<body class="admin-corpo">
+
+<!-- =================== TOPO DO PAINEL (igual em todas as páginas) =================== -->
+<header class="admin-topo">
+  <a class="logo" href="painel.html" aria-label="Painel do Forninho da Lili, visão geral">
+    <img class="logo-selo" src="../assets/img/logo-selo.jpg" alt="" width="44" height="44">
+    <span class="logo-forninho">Forninho</span>
+    <span class="logo-da">da</span>
+    <span class="logo-lili">Lili</span>
+    <span class="logo-papel">Painel</span>
+  </a>
+  <div class="admin-usuario">
+    <span>Olá, <strong data-nome-usuario>Lili</strong></span>
+    <a href="../index.html" target="_blank" rel="noopener">Ver o site</a>
+    <button class="botao botao-mini botao-sair" type="button" data-sair>Sair</button>
+  </div>
+</header>
+
+<div class="admin-app">
+  <div class="painel">
+    <nav class="painel-menu" aria-label="Menu do painel">
+      <a href="painel.html">Visão geral</a>
+      <a href="pedidos.html">Pedidos</a>
+      <a href="agenda.html">Agenda</a>
+      <a class="ativo" href="producao.html" aria-current="page">Produção</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="banner.html">Página inicial</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
+    </nav>
+
+    <main class="painel-corpo">
+      <div class="painel-topo">
+        <div>
+          <h1>Produção do dia</h1>
+          <p class="subtitulo">Tudo o que precisa ser preparado para a data escolhida.</p>
+        </div>
+        <button class="botao botao-claro" type="button" id="imprimir">Imprimir lista</button>
+      </div>
+
+      <form class="ferramentas" onsubmit="return false">
+        <label>Data de entrega ou retirada
+          <input type="date" id="data">
+        </label>
+      </form>
+
+      <p class="titulo-dia" id="titulo-dia"></p>
+
+      <div class="painel-grade painel-grade-2">
+        <section class="bloco" aria-labelledby="t-quantidades">
+          <h2 id="t-quantidades">Quantidades</h2>
+          <table class="tabela tabela-producao">
+            <thead><tr><th scope="col">Produto</th><th scope="col">Quantidade</th></tr></thead>
+            <tbody id="lista-quantidades"></tbody>
+          </table>
+        </section>
+
+        <section class="bloco" aria-labelledby="t-pedidos-dia">
+          <h2 id="t-pedidos-dia">Pedidos e observações</h2>
+          <ul class="lista-producao" id="lista-pedidos"></ul>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  var db = LojaDB, esc = db.esc;
+  var campoData = document.getElementById('data');
+
+  // Data inicial: a da URL (?data=), ou o próximo dia com pedidos, ou hoje
+  var futuras = db.listar('pedido').filter(function (p) { return p.data_entrega >= db.hojeISO() && p.status !== 'Cancelado'; })
+    .map(function (p) { return p.data_entrega; }).sort();
+  campoData.value = Admin.param('data') || futuras[0] || db.hojeISO();
+
+  function desenhar() {
+    var d = campoData.value;
+    var clientes = db.listar('cliente'), produtos = db.listar('produto'), itens = db.listar('pedido_item');
+    var doDia = db.listar('pedido').filter(function (p) { return p.data_entrega === d && p.status !== 'Cancelado'; })
+      .sort(function (a, b) { return (a.horario || '99').localeCompare(b.horario || '99'); });
+    function nome(lista, id, padrao) { var r = lista.filter(function (x) { return x.id === id; })[0]; return r ? r.nome : padrao; }
+
+    document.getElementById('titulo-dia').textContent = d ? db.dataLonga(d) + ': ' + doDia.length + (doDia.length === 1 ? ' pedido' : ' pedidos') : 'Escolha uma data.';
+
+    var soma = {};
+    doDia.forEach(function (p) {
+      itens.filter(function (i) { return i.pedido_id === p.id; }).forEach(function (i) {
+        var n = nome(produtos, i.produto_id, 'Produto removido');
+        soma[n] = (soma[n] || 0) + i.quantidade;
+      });
+    });
+    var linhas = Object.keys(soma).sort(function (a, b) { return soma[b] - soma[a]; });
+    document.getElementById('lista-quantidades').innerHTML = linhas.length ? linhas.map(function (n) {
+      return '<tr><td class="td-nome"><span>' + esc(n) + '</span></td><td data-rotulo="Quantidade"><strong>' + soma[n] + '</strong></td></tr>';
+    }).join('') : '<tr><td class="tabela-vazia" colspan="2">Nenhum pedido para essa data.</td></tr>';
+
+    document.getElementById('lista-pedidos').innerHTML = doDia.length ? doDia.map(function (p) {
+      return '<li><strong><a href="pedido-form.html?id=' + p.id + '">Nº ' + p.id + '</a>, ' + esc(nome(clientes, p.cliente_id, 'Cliente removido')) + '</strong> ' +
+        '<span class="dica">' + (p.horario ? esc(p.horario) + ', ' : '') + esc(p.entrega.toLowerCase()) + ', ' + esc(p.status.toLowerCase()) + '</span>' +
+        '<ul>' + itens.filter(function (i) { return i.pedido_id === p.id; }).map(function (i) {
+          return '<li>' + i.quantidade + '× ' + esc(nome(produtos, i.produto_id, 'Produto removido')) + '</li>';
+        }).join('') + '</ul>' +
+        (p.observacao ? '<p class="obs">Observações: ' + esc(p.observacao) + '</p>' : '') + '</li>';
+    }).join('') : '<li class="dica">Nada para preparar nesse dia.</li>';
+  }
+
+  campoData.addEventListener('change', desenhar);
+  document.getElementById('imprimir').addEventListener('click', function () { window.print(); });
+  desenhar();
+</script>
+</body>
+</html>

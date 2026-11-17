@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Visão geral | Painel Forninho da Lili</title>
 <link rel="icon" href="../assets/img/logo-selo.jpg">
-<link rel="stylesheet" href="../assets/css/estilo.css">
-<link rel="stylesheet" href="assets/admin.css">
+<link rel="stylesheet" href="../assets/css/estilo.css?v=20261117a">
+<link rel="stylesheet" href="assets/admin.css?v=20261117a">
 <!-- dados.js = "banco" provisório; admin.js = proteção por login (precisa ficar no head) -->
-<script src="../assets/js/dados.js"></script>
-<script src="assets/admin.js"></script>
+<script src="../assets/js/dados.js?v=20261117a"></script>
+<script src="assets/admin.js?v=20261117a"></script>
 </head>
 <body class="admin-corpo">
 
@@ -36,8 +36,12 @@
     <nav class="painel-menu" aria-label="Menu do painel">
       <a class="ativo" href="painel.html" aria-current="page">Visão geral</a>
       <a href="pedidos.html">Pedidos</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="producao.html">Produção</a>
       <a href="produtos.html">Produtos</a>
+      <a href="banner.html">Página inicial</a>
       <a href="clientes.html">Clientes</a>
+      <a href="configuracoes.html">Configurações</a>
     </nav>
 
     <main class="painel-corpo">
@@ -52,10 +56,15 @@
         </div>
       </div>
 
-      <dl class="metricas">
-        <div><dt>Pedidos no mês</dt><dd id="m-pedidos">0</dd></div>
-        <div><dt>Itens vendidos no mês</dt><dd id="m-itens">0</dd></div>
-        <div><dt>Faturamento no mês</dt><dd id="m-total">R$ 0,00</dd></div>
+      <!-- Aparece só quando chegam pedidos novos pelo carrinho do site -->
+      <p class="aviso aviso-novos" id="aviso-novos" hidden></p>
+
+      <dl class="metricas metricas-5">
+        <div><dt>Faturamento do mês</dt><dd id="m-total">R$ 0,00</dd><dd class="metrica-sub">Pagamentos confirmados</dd></div>
+        <div><dt>Pedidos no mês</dt><dd id="m-pedidos">0</dd><dd class="metrica-sub">Sem contar cancelados</dd></div>
+        <div><dt>Ticket médio</dt><dd id="m-ticket">R$ 0,00</dd><dd class="metrica-sub">Por pedido pago</dd></div>
+        <div><dt>A receber</dt><dd id="m-receber">R$ 0,00</dd><dd class="metrica-sub" id="m-receber-sub">Pedidos ainda não pagos</dd></div>
+        <div><dt>Cancelados no mês</dt><dd id="m-cancelados">0</dd><dd class="metrica-sub" id="m-itens">0 itens vendidos</dd></div>
       </dl>
 
       <div class="painel-grade painel-grade-2">
@@ -66,18 +75,36 @@
           </div>
           <table class="tabela">
             <thead>
-              <tr><th scope="col">Pedido</th><th scope="col">Data</th><th scope="col">Total</th><th scope="col">Situação</th></tr>
+              <tr><th scope="col">Pedido</th><th scope="col">Feito em</th><th scope="col">Total</th><th scope="col">Situação</th></tr>
             </thead>
             <tbody id="lista-recentes"></tbody>
           </table>
         </section>
+        <section class="bloco" aria-labelledby="t-proximas">
+          <div class="bloco-topo">
+            <h2 id="t-proximas">Próximas entregas</h2>
+            <a href="agenda.html">Ver agenda</a>
+          </div>
+          <ul class="lista-agenda" id="lista-proximas"></ul>
+        </section>
 
+      </div>
+
+      <div class="painel-grade painel-grade-2">
         <section class="bloco" aria-labelledby="t-vendas">
           <div class="bloco-topo">
             <h2 id="t-vendas">Vendas por item</h2>
             <span class="dica">Unidades, sem pedidos cancelados</span>
           </div>
           <ul class="barras" id="lista-barras"></ul>
+        </section>
+
+        <section class="bloco" aria-labelledby="t-semana">
+          <div class="bloco-topo">
+            <h2 id="t-semana">Entregas por dia da semana</h2>
+            <span class="dica">Ajuda a planejar a produção</span>
+          </div>
+          <ul class="barras" id="lista-semana"></ul>
         </section>
       </div>
 
@@ -87,6 +114,7 @@
           <a href="produtos.html">Gerenciar produtos</a>
         </div>
         <p id="resumo-cardapio"></p>
+        <p class="dica" id="resumo-config"></p>
       </section>
 
       <div class="zona-demo">
@@ -105,70 +133,107 @@
   var pedidos = db.listar('pedido');
   var itens = db.listar('pedido_item');
 
-  function totalDoPedido(id) {
-    return itens.filter(function (i) { return i.pedido_id === id; })
-      .reduce(function (s, i) { return s + i.quantidade * i.preco_unitario; }, 0);
-  }
+  function totais(p) { return db.totaisPedido(p, itens); }
   function nomeCliente(id) {
     var c = clientes.filter(function (c) { return c.id === id; })[0];
     return c ? c.nome : 'Cliente removido';
-  }
-  function classeStatus(s) {
-    return 'status status-' + s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
   }
 
   var hoje = new Date();
   document.getElementById('hoje').textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-  // ----- Métricas do mês (pedidos cancelados não contam) -----
-  var mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0'); // AAAA-MM
-  var doMes = pedidos.filter(function (p) { return p.data_pedido.slice(0, 7) === mesAtual && p.status !== 'Cancelado'; });
-  var idsDoMes = doMes.map(function (p) { return p.id; });
-  var itensDoMes = itens.filter(function (i) { return idsDoMes.indexOf(i.pedido_id) !== -1; });
+  // ----- Pedidos novos que chegaram pelo site -----
+  var novosSite = pedidos.filter(function (p) { return p.status === 'Novo' && p.origem === 'Site'; });
+  if (novosSite.length) {
+    var aviso = document.getElementById('aviso-novos');
+    aviso.innerHTML = novosSite.length + (novosSite.length === 1 ? ' pedido novo chegou' : ' pedidos novos chegaram') +
+      ' pelo site. Confira os valores e a data com a cliente no WhatsApp. <a href="pedidos.html?status=Novo">Ver pedidos novos</a>';
+    aviso.hidden = false;
+  }
 
-  document.getElementById('m-pedidos').textContent = doMes.length;
-  document.getElementById('m-itens').textContent = itensDoMes.reduce(function (s, i) { return s + i.quantidade; }, 0);
-  document.getElementById('m-total').textContent = db.dinheiro(itensDoMes.reduce(function (s, i) { return s + i.quantidade * i.preco_unitario; }, 0));
+  // ----- Métricas do mês, pela data em que o pedido foi feito -----
+  var mesAtual = db.hojeISO().slice(0, 7); // AAAA-MM
+  var doMes = pedidos.filter(function (p) { return p.data_pedido.slice(0, 7) === mesAtual; });
+  var validos = doMes.filter(function (p) { return p.status !== 'Cancelado'; });
+  var pagos = validos.filter(function (p) { return Number(p.pago) === 1; });
+  var faturamento = pagos.reduce(function (s, p) { return s + totais(p).total; }, 0);
+  var abertos = pedidos.filter(function (p) { return p.status !== 'Cancelado' && Number(p.pago) !== 1; });
+  var aReceber = abertos.reduce(function (s, p) { return s + totais(p).total; }, 0);
+  var aCombinar = abertos.some(function (p) { var t = totais(p); return t.aCombinar || t.taxaPendente; });
+
+  document.getElementById('m-total').textContent = db.dinheiro(faturamento);
+  document.getElementById('m-pedidos').textContent = validos.length;
+  document.getElementById('m-ticket').textContent = db.dinheiro(pagos.length ? faturamento / pagos.length : 0);
+  document.getElementById('m-receber').textContent = db.dinheiro(aReceber);
+  document.getElementById('m-receber-sub').textContent = abertos.length + ' pedido(s) não pago(s)' + (aCombinar ? ', com valores a combinar' : '');
+  document.getElementById('m-cancelados').textContent = doMes.length - validos.length;
+  document.getElementById('m-itens').textContent = validos.reduce(function (s, p) { return s + totais(p).unidades; }, 0) + ' itens vendidos no mês';
+
+  // ----- Próximas entregas -----
+  var proximas = pedidos.filter(function (p) {
+    return p.data_entrega >= db.hojeISO() && ['Entregue', 'Cancelado'].indexOf(p.status) === -1;
+  }).sort(function (a, b) { return a.data_entrega.localeCompare(b.data_entrega) || (a.horario || '').localeCompare(b.horario || ''); }).slice(0, 5);
+  document.getElementById('lista-proximas').innerHTML = proximas.length ? proximas.map(function (p) {
+    return '<li><span class="agenda-quando">' + db.dataCurta(p.data_entrega) + (p.horario ? ' ' + esc(p.horario) : '') + '</span>' +
+      '<span><a href="pedido-form.html?id=' + p.id + '">Nº ' + p.id + '</a>, ' + esc(nomeCliente(p.cliente_id)) + ' (' + esc(p.entrega.toLowerCase()) + ')</span>' +
+      '<span class="' + Admin.classeStatus(p.status) + '">' + esc(p.status) + '</span></li>';
+  }).join('') : '<li class="dica">Nenhuma entrega marcada.</li>';
 
   // ----- Pedidos recentes -----
   var recentes = pedidos.slice().sort(function (a, b) { return b.data_pedido.localeCompare(a.data_pedido) || b.id - a.id; }).slice(0, 5);
   document.getElementById('lista-recentes').innerHTML = recentes.length ? recentes.map(function (p) {
     return '<tr>' +
-      '<td class="td-nome"><span><a href="pedido-form.html?id=' + p.id + '">Nº ' + p.id + '</a> · ' + esc(nomeCliente(p.cliente_id)) + '</span></td>' +
-      '<td data-rotulo="Data">' + db.dataBr(p.data_pedido) + '</td>' +
-      '<td data-rotulo="Total">' + db.dinheiro(totalDoPedido(p.id)) + '</td>' +
-      '<td data-rotulo="Situação"><span class="' + classeStatus(p.status) + '">' + esc(p.status) + '</span></td>' +
+      '<td class="td-nome"><span><a href="pedido-form.html?id=' + p.id + '">Nº ' + p.id + '</a> · ' + esc(nomeCliente(p.cliente_id)) +
+        (p.origem === 'Site' ? ' <span class="etiqueta-site">Site</span>' : '') + '</span></td>' +
+      '<td data-rotulo="Feito em">' + db.dataBr(p.data_pedido) + '</td>' +
+      '<td data-rotulo="Total" class="td-quebra">' + esc(db.textoTotal(totais(p))) + '</td>' +
+      '<td data-rotulo="Situação"><span class="' + Admin.classeStatus(p.status) + '">' + esc(p.status) + '</span></td>' +
       '</tr>';
   }).join('') : '<tr><td class="tabela-vazia" colspan="4">Nenhum pedido ainda.</td></tr>';
 
-  // ----- Vendas por item (barras) -----
-  var validos = pedidos.filter(function (p) { return p.status !== 'Cancelado'; }).map(function (p) { return p.id; });
+  // ----- Barras -----
+  function barras(lista, vazio) {
+    var maior = Math.max.apply(null, [1].concat(lista.map(function (r) { return r.qtd; })));
+    if (!lista.some(function (r) { return r.qtd; })) return '<li class="dica">' + vazio + '</li>';
+    return lista.map(function (r) {
+      return '<li><div class="barra-texto"><span>' + esc(r.nome) + '</span><strong>' + r.qtd + '</strong></div>' +
+        '<div class="barra-trilho"><div class="barra-valor" style="width:' + Math.round(r.qtd / maior * 100) + '%"></div></div></li>';
+    }).join('');
+  }
+
+  var idsValidos = pedidos.filter(function (p) { return p.status !== 'Cancelado'; }).map(function (p) { return p.id; });
   var porProduto = {};
   itens.forEach(function (i) {
-    if (validos.indexOf(i.pedido_id) === -1) return;
+    if (idsValidos.indexOf(i.pedido_id) === -1) return;
     porProduto[i.produto_id] = (porProduto[i.produto_id] || 0) + i.quantidade;
   });
   var ranking = Object.keys(porProduto).map(function (id) {
     var p = produtos.filter(function (p) { return p.id === Number(id); })[0];
     return { nome: p ? p.nome : 'Produto removido', qtd: porProduto[id] };
   }).sort(function (a, b) { return b.qtd - a.qtd; }).slice(0, 6);
-  var maior = ranking.length ? ranking[0].qtd : 1;
-  document.getElementById('lista-barras').innerHTML = ranking.length ? ranking.map(function (r) {
-    return '<li><div class="barra-texto"><span>' + esc(r.nome) + '</span><strong>' + r.qtd + '</strong></div>' +
-      '<div class="barra-trilho"><div class="barra-valor" style="width:' + Math.round(r.qtd / maior * 100) + '%"></div></div></li>';
-  }).join('') : '<li class="dica">Ainda não há vendas.</li>';
+  document.getElementById('lista-barras').innerHTML = barras(ranking, 'Ainda não há vendas.');
 
-  // ----- Resumo do cardápio -----
+  var semana = [0, 0, 0, 0, 0, 0, 0];
+  pedidos.forEach(function (p) { if (p.status !== 'Cancelado' && p.data_entrega) semana[new Date(p.data_entrega + 'T12:00:00').getDay()]++; });
+  document.getElementById('lista-semana').innerHTML = barras(db.DIAS_SEMANA.map(function (d, i) { return { nome: d, qtd: semana[i] }; }), 'Ainda não há entregas.');
+
+  // ----- Resumo do cardápio e da configuração -----
   var ativos = produtos.filter(function (p) { return Number(p.ativo) === 1; }).length;
   var semFoto = produtos.filter(function (p) { return Number(p.ativo) === 1 && !p.imagem; }).length;
   document.getElementById('resumo-cardapio').textContent =
     ativos + ' produto(s) aparecendo no site, ' + (produtos.length - ativos) + ' desativado(s)' +
     (semFoto ? ' e ' + semFoto + ' ainda sem foto.' : '.');
+  var c = db.config();
+  var faltando = [['QR code PIX', c.pix_qrcode], ['horário', c.horario], ['Instagram', c.instagram], ['antecedência mínima', c.antecedencia_dias], ['política de cancelamento', c.politica_cancelamento]]
+    .filter(function (x) { return !x[1]; }).map(function (x) { return x[0]; });
+  document.getElementById('resumo-config').innerHTML = faltando.length
+    ? 'Não aparecem no site até serem preenchidos: ' + esc(db.listaPt(faltando)) + '. <a href="configuracoes.html">Preencher em Configurações</a>'
+    : 'Todas as informações da loja estão preenchidas.';
 
   document.getElementById('restaurar').addEventListener('click', function () {
     Admin.confirmar({
       titulo: 'Restaurar dados de exemplo?',
-      texto: 'Todos os produtos, clientes e pedidos criados nesta demonstração serão apagados e os dados de exemplo voltarão.',
+      texto: 'Todos os produtos, clientes, pedidos e configurações criados nesta demonstração serão apagados e os dados de exemplo voltarão.',
       botao: 'Restaurar', perigo: true
     }).then(function (ok) {
       if (ok) { db.restaurarExemplo(); window.location.reload(); }
